@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <title>商品详情</title>
+    <link rel="stylesheet" type="text/css" href="https://cdn.bootcss.com/bootstrap/3.3.6/css/bootstrap.min.css"/>
+    <script type="text/javascript" src="https://cdn.bootcss.com/jquery/1.11.1/jquery.min.js"></script>
+    <script type="text/javascript" src="https://cdn.bootcss.com/jquery-validate/1.11.1/jquery.validate.min.js"></script>
+    <script type="text/javascript"
+            src="https://cdn.bootcss.com/jquery-validate/1.11.1/localization/messages_zh.min.js"></script>
+    <script type="text/javascript" src="https://cdn.bootcss.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="https://cdn.bootcss.com/layer/3.1.0/layer.js"></script>
+    <script type="text/javascript" src="https://cdn.bootcss.com/blueimp-md5/2.10.0/js/md5.min.js"></script>
+    <script type="text/javascript" src="https://cdn.bootcss.com/moment.js/2.22.1/moment.min.js"></script>
+    <script type="text/javascript" src="./js/common.js"></script>
+    <style>
+        .panel-p {
+            font-weight: 600;
+            text-align: center;
+            background-color: #fff;
+            width: 60%;
+            margin: auto;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            margin-top: 13%;
+        }
+    </style>
+</head>
+<body>
+<div id="info" class="panel panel-primary panel-p">
+    <div class="panel-heading">秒杀商品详情</div>
+    <div class="panel-body">
+        <span style="display: none">你还没登录!</span>
+        <span style="display: none">你还没有收货地址</span>
+    </div>
+    <table class="table" id="goodsList">
+        <tr>
+            <td>商品名称</td>
+            <td colspan="3" id="goodsName"></td>
+        </tr>
+        <tr>
+            <td>商品图片</td>
+            <td colspan="3"><img id="goodsImg" width="200" height="200"/></td>
+        </tr>
+        <tr>
+            <td>秒杀开始时间</td>
+            <td id="startDate"></td>
+            <td id="seckillTime">
+                <input id="start" type="hidden"/>
+                <input id="end" type="hidden"/>
+                <span id="Tip">秒杀已结束</span>
+            </td>
+            <td>
+                <div class="row">
+                    <div class="form-inline">
+                        <img id="verifyCodeImg" width="80" height="32" style="display: none" onclick="refreshVerify()">
+                        <input id="verifyCode" class="form-control" style="display: none">
+                        <button class="btn btn-primary" type="button" onclick="getSeckillPath()" id="buyButton">
+                            秒杀
+                        </button>
+                    </div>
+                </div>
+            </td>
+        </tr>
+        <tr>
+            <td>商品原价</td>
+            <td colspan="3" id="goodsPrice"></td>
+        </tr>
+        <tr>
+            <td>商品秒杀价</td>
+            <td colspan="3" id="seckillPrice"></td>
+        </tr>
+        <tr>
+            <td>库存数量</td>
+            <td colspan="3" id="stockCount"></td>
+        </tr>
+    </table>
+</div>
+</body>
+<script type="text/javascript">
+    $(function () {
+        to_detail();
+        countDown();
+    });
+
+
+    function to_detail() {
+        var data = window.location.search;
+        $.ajax({
+            url: "./goods/to_detail" + data,
+            type: "GET",
+            success: function (data) {
+                if (data.code == 0) {
+                    $("#goodsName").html(data.data.goodsName);
+                    $("#goodsImg").attr("src", data.data.goodsImg);
+                    var start = data.data.startDate;
+                    var end = data.data.endDate;
+                    $("#startDate").html(moment(start).format('YYYY-MM-DD HH-mm-ss'));
+                    $("#start").val(start);
+                    $("#end").val(end);
+                    formart();
+                    $("#goodsPrice").html(data.data.goodsPrice);
+                    $("#seckillPrice").html(data.data.seckillPrice);
+                    $("#stockCount").html(data.data.stockCount);
+                } else {
+                    layer.msg("抱歉,秒杀失败:" + data.msg);
+                }
+                console.log(data);
+            }
+        });
+
+    }
+
+    function formart() {
+
+        var start = $("#start").val();
+        var end = $("#end").val();
+        var timestamp = new Date().getTime();
+        if (timestamp < start) {
+            var time = Number(start - timestamp) / 1000;
+            var span = "<span id='countDown'>" + parseInt(time) + "</span>秒"
+            $("#Tip").html("离开时还有");
+            $("#Tip").append(span);
+            $("#verifyCodeImg").hide();
+            $("#verifyCode").hide();
+            $("#buyButton").attr("disabled", true);
+        } else if (timestamp > start && timestamp < end) {
+            var u_data = window.location.search;
+            var Id = u_data.split("=")[1];
+            $("#Tip").html("秒杀中");
+            if (!$("#verifyCodeImg").attr("src")) {
+                $("#verifyCodeImg").attr("src", "./seckill/verifyCode?goodsId=" + Id + "&timestamp=" + new Date().getTime());
+            }
+            $("#verifyCodeImg").show();
+            $("#verifyCode").show();
+            $("#buyButton").attr("disabled", false);
+        } else {
+            $("#verifyCodeImg").hide();
+            $("#verifyCode").hide();
+            $("#Tip").html("已结束");
+            $("#buyButton").attr("disabled", true);
+        }
+    }
+
+    function refreshVerify() {
+        var u_data = window.location.search;
+        var Id = u_data.split("=")[1];
+        $("#verifyCodeImg").attr("src", "./seckill/verifyCode?goodsId=" + Id + "&timestamp=" + new Date().getTime());
+    }
+
+    function countDown() {
+        var tip = $("#countDown");
+        if (tip) {
+            formart();
+        }
+        setTimeout(countDown, 1000);
+    }
+
+
+    function getSeckillResult(id) {
+        g_showLoading();
+        $.ajax({
+            url: "./seckill/getResult?goodsId=" + id,
+            type: "GET",
+            success: function (data) {
+                layer.closeAll();
+                var res = data;
+                if (res.code == 0) {
+                    if (res.data < 0) {
+                        layer.msg("抱歉,秒杀失败");
+                    } else if (res.data == 0) {
+                        setTimeout(function () {
+                            getSeckillResult(id);
+                        }, 50);
+                    } else {
+                        layer.confirm("恭喜你，秒杀成功！查看订单?", {btn: ["确定", "取消"]}, function () {
+                            window.location.href = "./order_detail.html?orderId=" + res.data;
+                        }, function () {
+                            layer.closeAll();
+                        });
+                    }
+                } else {
+                    layer.msg("抱歉,秒杀失败:" + data.msg);
+                }
+                console.log(data);
+            },
+            error: function () {
+                layer.closeAll();
+            }
+        });
+
+    }
+
+    function getSeckillPath() {
+        g_showLoading();
+        var u_data = window.location.search;
+        var Id = u_data.split("=")[1];
+        $.ajax({
+            url: "./seckill/seckillPath",
+            type: "GET",
+            data: {goodsId: Id, verifyCode: $("#verifyCode").val()},
+            success: function (data) {
+                layer.closeAll();
+                if (data.code == 0) {
+                    var path = data.data;
+                    do_seckill(path);
+                } else {
+                    layer.msg("抱歉,秒杀失败:" + data.msg);
+                }
+                console.log(data);
+            },
+            error: function () {
+                layer.closeAll();
+            }
+        });
+    }
+
+    function do_seckill(path) {
+        g_showLoading();
+        var u_data = window.location.search;
+        var Id = u_data.split("=")[1];
+        $.ajax({
+            url: "./seckill/" + path + "/do_seckill",
+            type: "POST",
+            data: {
+                goodsId: Id
+            },
+            success: function (data) {
+                layer.closeAll();
+                if (data.code == 0) {
+                    getSeckillResult(Id);
+                } else {
+                    layer.msg("抱歉,秒杀失败:" + data.msg);
+                }
+                console.log(data);
+            },
+            error: function () {
+                layer.closeAll();
+            }
+        });
+    }
+</script>
+</html>

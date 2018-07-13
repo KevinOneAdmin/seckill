@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <title>订单详情</title>
+    <link rel="stylesheet" type="text/css" href="https://cdn.bootcss.com/bootstrap/3.3.6/css/bootstrap.min.css"/>
+    <script type="text/javascript" src="https://cdn.bootcss.com/jquery/1.11.1/jquery.min.js"></script>
+    <script type="text/javascript" src="https://cdn.bootcss.com/jquery-validate/1.11.1/jquery.validate.min.js"></script>
+    <script type="text/javascript"
+            src="https://cdn.bootcss.com/jquery-validate/1.11.1/localization/messages_zh.min.js"></script>
+    <script type="text/javascript" src="https://cdn.bootcss.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="https://cdn.bootcss.com/layer/3.1.0/layer.js"></script>
+    <script type="text/javascript" src="https://cdn.bootcss.com/blueimp-md5/2.10.0/js/md5.min.js"></script>
+    <script type="text/javascript" src="https://cdn.bootcss.com/moment.js/2.22.1/moment.min.js"></script>
+    <script type="text/javascript" src="./js/common.js"></script>
+    <style>
+        .panel-p {
+            font-weight: 600;
+            text-align: center;
+            background-color: #fff;
+            width: 60%;
+            margin: auto;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            margin-top: 13%;
+        }
+    </style>
+</head>
+<body>
+<div class="panel panel-primary panel-p">
+    <div class="panel-heading">秒杀订单详情</div>
+    <table class="table" id="goodsList">
+        <tr>
+            <td>商品名称</td>
+            <td colspan="3" id="goodsName"></td>
+        </tr>
+        <tr>
+            <td>商品图片</td>
+            <td colspan="2"><img id="goodsImg" width="200" height="200"/></td>
+        </tr>
+        <tr>
+            <td>订单价格</td>
+            <td colspan="2" id="goodsPrice"></td>
+        </tr>
+        <tr>
+            <td>下单时间</td>
+            <td colspan="2" id="createDate"></td>
+        </tr>
+
+        <tr>
+            <td>订单状态</td>
+            <td id="status">
+            </td>
+            <td>
+                <button  style="display: none" class="btn btn-primary" id="payButton"  type="button">立即支付</button>
+            </td>
+        </tr>
+
+        <tr>
+            <td>收货人</td>
+            <td colspan="2" id="user"></td>
+        </tr>
+
+        <tr>
+            <td>收货地址</td>
+            <td colspan="2" >上海市浦东新区陆家嘴环路1333号</td>
+        </tr>
+    </table>
+</div>
+</body>
+<script type="text/javascript">
+    $(function () {
+        to_detail();
+    });
+
+
+    function to_detail() {
+        var data = window.location.search;
+        $.ajax({
+            url: "./order/getOrder" + data,
+            type: "GET",
+            success: function (data) {
+                if (data.code == 0) {
+                    $("#goodsName").html(data.data.goodsName);
+                    $("#goodsImg").attr("src", data.data.goodsImg);
+                    $("#goodsPrice").html(data.data.goodsPrice);
+                    $("#createDate").html(moment(data.data.createDate).format('YYYY-MM-DD HH-mm-ss'));
+                    formart(data.data.status);
+                    var html=data.data.nickmane +"  "+data.data.userId;
+                    $("#user").html(html);
+                } else {
+                    layer.msg(data.msg);
+                }
+                console.log(data);
+            },
+        });
+    }
+
+    function formart(status) {
+        switch (status){
+            case 0:
+                $("#status").html("待支付");
+                $("#payButton").css("display","");
+                break;
+            case 1:
+                $("#status").html("待发货");
+                $("#payButton").css("display","none");
+                break;
+            case 2:
+                $("#status").html("已发货");
+                $("#payButton").css("display","none");
+                break;
+            case 3:
+                $("#status").html("已收货");
+                $("#payButton").css("display","none");
+                break;
+            case 4:
+                $("#status").html("已退款");
+                $("#payButton").css("display","none");
+                break;
+            case 5:
+                $("#status").html("已完成");
+                $("#payButton").css("display","none");
+                break;
+            default:
+                break;
+        }
+    }
+</script>
+</html>

@@ -1,0 +1,17 @@
+package com.mdiai.seckill;
+
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.builder.SpringApplicationBuilder;
+import org.springframework.boot.web.support.SpringBootServletInitializer;
+
+/**
+  * 打war包
+  */
+@SpringBootApplication
+public class SeckillApplicationWar extends SpringBootServletInitializer {
+
+	@Override
+	protected SpringApplicationBuilder configure(SpringApplicationBuilder builder) {
+		return builder.sources(SeckillApplication.class);
+	}
+}
