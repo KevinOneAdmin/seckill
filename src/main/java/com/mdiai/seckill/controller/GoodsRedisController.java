@@ -42,7 +42,7 @@ public class GoodsRedisController {
 
 
     /**
-     * QUP=2884
+     * QPS=2884
      * Thymeleaf加Redis缓存.
      * @return
      */
