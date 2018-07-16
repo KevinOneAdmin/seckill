@@ -1,6 +1,6 @@
 # 秒杀模拟
 
-##项目背景
+## 项目背景
 &nbsp;&nbsp;&nbsp;&nbsp;本想项目是一个模拟秒杀系用于模拟到大并发情况下的开发,讨论在并发情况下一些问题的处理方案。
 ## 使用技术
   - Spring-Boot 1.5.8.RELEASE
@@ -14,10 +14,10 @@
   - Spring-Boot-Validation 1.5.8.RELEASE
   - RabbitMq 3.7.5
   
-##具体实现
+## 具体实现
 
 
-###功能结构
+### 功能结构
 
 **登录**
 ![登录](https://i.imgur.com/A3FchFz.png)
