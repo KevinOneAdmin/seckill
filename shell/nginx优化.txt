@@ -1,0 +1,145 @@
+#工作进程CPU
+worker_processes  4;
+#单个工作进程最大并发连接数 events节点
+worker_connections 4096;
+#同时建立多个连接 events节点
+multi_accept on;
+#线程模型 events节点
+use epoll;
+#每个进程打开的最大文件数,受限于操作系统
+worker_rlimit_nofile 10240;
+#系统配置
+vi /etc/security/limits.conf
+* hard nofile 10240
+* soft nofile 10240
+* soft core unlimited
+* soft stack 10240
+
+#隐藏版本号
+server_tokens off;
+#文件上传时要调大，上传文件
+client_max_body_size 10m;
+
+#http节点
+#反向代理集群
+upstream server_pool{
+   server localhost:8080 weight=1 max_fails=2 fail_timeout=30s;
+   server localhost:8081 weight=1 max_fails=2 fail_timeout=30s;
+   #最大空闲的长链接数
+   keepalive 200;
+}
+
+
+
+
+#压缩
+#开启压缩
+gzip on;
+#在IE6上禁用
+gzip_disable "MSIE[1-6]\.(?!.*SV1)";
+#任何代理都通用
+gzip_proxied any;
+#压缩类型
+gzip_types text/plain application/x-javascrpt application/javascrpt text/css application/xml
+#vary:accept-Encoding
+gzip_vary on;
+#如果有压缩好的直接用
+gzip_static on;
+
+#长连接
+#长连接超时时间
+keepalive_timeout 60;
+#可用次数
+keepalive_requests 200;
+#禁用IE6
+keepalive_disable msie6;
+
+#后端链接超时时间
+#nginx连接服务器超时时间
+proxy_connect_timeout 5;
+#服务器连接nginx超时时间
+proxy_send_timeout 5;
+#响应超时时间
+proxy_read_timeout 60;
+#缓存
+#缓存目录，levels:目录等级,inactive:缓存时间，keys_zone:节点名和缓存大小，max_size:最大
+proxy_cache_path /home/work/nginx/proxy_cache levels=1:2 keys_zone=cache_one:200m inactive=1d max_size=20g;
+#忽略请求头
+proxy_ignore_headers X-Accel-Expires Expires Cache-Control;
+#隐藏
+proxy_hide_header Cache-Control;
+proxy_hide_header Pragma;
+
+
+#log
+#默认写日志：打开文件写入关闭,max:缓存的文件描述的数量,inactive:缓存时间,valid:检查时间间隔,min_uses:在inactive时间段内使用多少次加入缓存
+open_log_file_cache max=200 inactive=20s valid=1m min_uses=2;
+
+#http 下server下的location节点
+location /{
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header connection "upgrade";
+    #获取用户IP
+    proxy_set_header Host $http_host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $remote_addr;
+    #https相关
+    proxy_set_header X-Forwarded-Proto $scheme;
+    #代理
+    proxy_pass http://server_pool;
+}
+
+#http 下server下
+#状态监控
+location /nginx_status {
+     #启用监控
+     stub_status on;
+     #不记log
+     access_log off;
+     #允许ip
+     allow 127.0.0.1;
+     allow 192.168.56.101;
+     #拒绝其他所有连接
+     deny all;
+}
+
+#缓存清理
+location ~/purge(/.*)
+{
+   allow 127.0.0.1;
+   allow 192.168.56.101;
+   deny all;
+   #清理路径
+   proxy_cache_purge cache_one $host$1$is_args$args;
+}
+
+#静态文件缓存
+location ~.*\.(gif|jpg|jpeg|png|bmp|swf|js|css|html|htm)?$
+{
+   #过期时间
+   expires 1d;
+   #使用的缓存
+   proxy_cache cache_one;
+   #放入缓存的
+   proxy_cache_valid 200 304 1d;
+   proxy_cache_valid any 1m;
+   #缓存key
+   proxy_cache_key $host$uri$is_args$args;
+   #代理
+   proxy_pass http://server_pool;
+}
+
+
+#系统连接
+vi /etc/sysctl.conf
+#防止一个套接字过多尝试过载
+sysctl -w net.ipv4.tcp_syncookies=1
+#连接队列默认128
+sysctl -w net.core.somaxconn=1024
+#等待超时时间
+sysctl -w net.ipv4.tcp_fin_timeout=10
+#os使用timewait连接
+sysctl -w net.ipv4.tcp_tw_reuse=1
+#回收禁止
+sysctl -w net.ipv4.tcp_tw_recycle=0
