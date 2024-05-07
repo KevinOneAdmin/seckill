@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+
+
+
 echo '======================start seckill loding=========================='
 mvn clean -Dmaven.test.skip=true package
 echo '======================build seckill package ove====================='
